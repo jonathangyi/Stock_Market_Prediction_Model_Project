@@ -13,3 +13,6 @@ dependencies:
   - scikit-learn
   - matplotlib
   - seaborn
+  - conda-forge::keras
+  - tensorflow
+  - ipykernel
