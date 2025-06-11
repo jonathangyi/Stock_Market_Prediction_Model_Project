@@ -16,3 +16,4 @@ dependencies:
   - conda-forge::keras
   - tensorflow
   - ipykernel
+  - alpha_vantage
