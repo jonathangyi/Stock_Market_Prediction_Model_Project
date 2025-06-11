@@ -1,0 +1,440 @@
+# Enhanced Stock Predictor Documentation
+
+## Overview
+
+The Enhanced Stock Predictor is a sophisticated machine learning system for predicting stock prices using deep learning techniques. It combines LSTM/GRU neural networks with comprehensive technical indicators to provide accurate stock price forecasts.
+
+## Features
+
+- **Multiple Data Sources**: Supports both Yahoo Finance (yfinance) and Alpha Vantage APIs
+- **Advanced Technical Indicators**: RSI, MACD, Bollinger Bands, ATR, moving averages, and more
+- **Deep Learning Models**: LSTM and GRU architectures with bidirectional layers
+- **Robust Preprocessing**: Multiple scaling options and feature engineering
+- **Future Predictions**: Multi-day ahead forecasting capabilities
+- **Model Persistence**: Save and load trained models with full configuration
+
+## Installation
+
+```bash
+pip install numpy pandas yfinance scikit-learn tensorflow alpha-vantage joblib
+```
+
+## Quick Start
+
+```python
+from enhanced_stock_predictor import EnhancedStockPredictor, train_enhanced_stock_model
+
+# Set your Alpha Vantage API key
+API_KEY = "your_alpha_vantage_api_key"
+
+# Train a model for Apple stock
+predictor, history, metrics, predictions = train_enhanced_stock_model(
+    ticker_symbol="AAPL",
+    api_key=API_KEY,
+    model_type='lstm_advanced',
+    save_model=True
+)
+
+# View predictions
+print(f"Testing MAE: ${metrics['test_mae']:.4f}")
+print("Next 10 days predictions:", predictions)
+```
+
+## Class Reference
+
+### EnhancedStockPredictor
+
+The main class for building and training stock prediction models.
+
+#### Constructor
+
+```python
+EnhancedStockPredictor(ticker, api_key, sequence_length=120, test_size=0.15)
+```
+
+**Parameters:**
+- `ticker` (str): Stock ticker symbol (e.g., "AAPL", "GOOGL")
+- `api_key` (str): Alpha Vantage API key for fallback data source
+- `sequence_length` (int, default=120): Number of historical days to use for prediction
+- `test_size` (float, default=0.15): Fraction of data to use for testing
+
+#### Methods
+
+##### `fetch_data(period="5y")`
+Fetches stock data from Yahoo Finance or Alpha Vantage.
+
+**Parameters:**
+- `period` (str): Time period for data ("1y", "2y", "5y", "max")
+
+**Technical Indicators Added:**
+- Moving averages (5, 10, 20, 50, 200 days)
+- RSI (Relative Strength Index)
+- MACD and MACD Signal
+- Bollinger Bands (upper and lower)
+- ATR (Average True Range)
+- Price change percentage
+- High/Low ratio
+- Volume ratios
+- Lag features (1, 2, 3, 5 days)
+
+##### `prepare_data(features=None)`
+Prepares and scales the data for training.
+
+**Parameters:**
+- `features` (list, optional): List of feature names to use. If None, uses all available features.
+
+**Default Features:**
+```python
+['Close', 'Open', 'High', 'Low', 'Volume',
+ 'MA_5', 'MA_10', 'MA_20', 'MA_50', 'MA_200',
+ 'RSI', 'MACD', 'MACD_signal', 'BB_upper', 'BB_lower', 'ATR',
+ 'Price_Change', 'High_Low_Ratio', 'Volume_Ratio',
+ 'Close_lag_1', 'Close_lag_2', 'Close_lag_3', 'Close_lag_5',
+ 'Volume_lag_1', 'Volume_lag_2', 'Volume_lag_3', 'Volume_lag_5']
+```
+
+##### `build_enhanced_model(model_type='lstm_advanced')`
+Builds the neural network architecture.
+
+**Parameters:**
+- `model_type` (str): Type of model architecture
+  - `'lstm_advanced'`: Bidirectional LSTM with 3 layers
+  - `'gru_ensemble'`: GRU-based architecture
+
+**Architecture Details:**
+
+**LSTM Advanced:**
+- Bidirectional LSTM (128 units) → BatchNorm → Dropout(0.2)
+- Bidirectional LSTM (64 units) → BatchNorm → Dropout(0.2)
+- LSTM (32 units) → BatchNorm → Dropout(0.2)
+- Dense layers with L1/L2 regularization
+
+**GRU Ensemble:**
+- GRU (128 units) → BatchNorm → Dropout(0.3)
+- GRU (64 units) → BatchNorm → Dropout(0.3)
+- GRU (32 units) → BatchNorm → Dropout(0.3)
+- Dense layers with L1/L2 regularization
+
+##### `train_enhanced_model(epochs=200, batch_size=16, validation_split=0.15)`
+Trains the model with advanced callbacks.
+
+**Parameters:**
+- `epochs` (int): Maximum number of training epochs
+- `batch_size` (int): Training batch size
+- `validation_split` (float): Fraction of training data for validation
+
+**Callbacks:**
+- Early Stopping (patience=25)
+- Model Checkpoint (saves best model)
+- Learning Rate Reduction (factor=0.5, patience=10)
+
+**Returns:**
+- Training history object
+
+##### `evaluate_model()`
+Evaluates the trained model on test data.
+
+**Returns:**
+Dictionary with metrics:
+- `train_rmse`, `test_rmse`: Root Mean Square Error
+- `train_mae`, `test_mae`: Mean Absolute Error
+- `train_r2`, `test_r2`: R-squared score
+- `train_mape`, `test_mape`: Mean Absolute Percentage Error
+
+##### `predict_future(days=10)`
+Predicts future stock prices.
+
+**Parameters:**
+- `days` (int): Number of days to predict
+
+**Process:**
+1. Uses last `sequence_length` days of data
+2. Iteratively predicts next day
+3. Updates input sequence with prediction
+4. Continues for specified number of days
+
+**Returns:**
+- Array of predicted prices in original scale
+
+##### `save_model()`
+Saves the trained model and associated files.
+
+**Files Created:**
+- `{ticker}_enhanced_model.keras`: Trained neural network
+- `{ticker}_scaler.pkl`: Fitted data scaler
+- `{ticker}_metadata.pkl`: Model configuration
+
+##### `load_model(model_filename=None, scaler_filename=None, metadata_filename=None)`
+Loads a previously saved model.
+
+**Parameters:**
+- `model_filename` (str, optional): Path to model file
+- `scaler_filename` (str, optional): Path to scaler file
+- `metadata_filename` (str, optional): Path to metadata file
+
+## Function Reference
+
+### `train_enhanced_stock_model(ticker_symbol, api_key, model_type='lstm_advanced', save_model=True)`
+
+Convenience function for complete training pipeline.
+
+**Parameters:**
+- `ticker_symbol` (str): Stock ticker
+- `api_key` (str): Alpha Vantage API key
+- `model_type` (str): Model architecture type
+- `save_model` (bool): Whether to save the trained model
+
+**Returns:**
+- `predictor`: Trained EnhancedStockPredictor instance
+- `history`: Training history
+- `metrics`: Evaluation metrics dictionary
+- `future_predictions`: Array of next 10 days predictions
+
+## Usage Examples
+
+### Basic Usage
+
+```python
+# Initialize predictor
+predictor = EnhancedStockPredictor("AAPL", "your_api_key")
+
+# Fetch and prepare data
+predictor.fetch_data(period="2y")
+predictor.prepare_data()
+
+# Build and train model
+predictor.build_enhanced_model(model_type='lstm_advanced')
+history = predictor.train_enhanced_model(epochs=100)
+
+# Evaluate
+metrics = predictor.evaluate_model()
+print(f"Test MAE: ${metrics['test_mae']:.2f}")
+
+# Predict future
+predictions = predictor.predict_future(days=5)
+print("Next 5 days:", predictions)
+```
+
+### Custom Features
+
+```python
+# Use only specific features
+custom_features = ['Close', 'Volume', 'MA_20', 'RSI', 'MACD']
+predictor.prepare_data(features=custom_features)
+```
+
+### Model Persistence
+
+```python
+# Save model
+predictor.save_model()
+
+# Load model later
+new_predictor = EnhancedStockPredictor("AAPL", "api_key")
+new_predictor.load_model()
+```
+
+### Different Model Types
+
+```python
+# GRU-based model
+predictor.build_enhanced_model(model_type='gru_ensemble')
+
+# Custom training parameters
+history = predictor.train_enhanced_model(
+    epochs=300,
+    batch_size=32,
+    validation_split=0.2
+)
+```
+
+## Technical Indicators
+
+### RSI (Relative Strength Index)
+Momentum oscillator measuring speed and change of price movements.
+- Range: 0-100
+- Overbought: >70
+- Oversold: <30
+
+### MACD (Moving Average Convergence Divergence)
+Trend-following momentum indicator.
+- MACD Line: 12-day EMA - 26-day EMA
+- Signal Line: 9-day EMA of MACD line
+
+### Bollinger Bands
+Volatility indicator with upper and lower bands.
+- Middle Band: 20-day SMA
+- Upper/Lower Bands: Middle Band ± (2 × Standard Deviation)
+
+### ATR (Average True Range)
+Measures market volatility.
+- Calculates average of true ranges over specified period
+- Higher values indicate higher volatility
+
+## Model Architecture Details
+
+### LSTM Advanced Architecture
+
+```
+Input Layer: (sequence_length, num_features)
+↓
+Bidirectional LSTM (128 units, return_sequences=True)
+↓
+BatchNormalization + Dropout(0.2)
+↓
+Bidirectional LSTM (64 units, return_sequences=True)
+↓
+BatchNormalization + Dropout(0.2)
+↓
+LSTM (32 units)
+↓
+BatchNormalization + Dropout(0.2)
+↓
+Dense (64 units, ReLU) + L1L2 Regularization
+↓
+BatchNormalization + Dropout(0.3)
+↓
+Dense (32 units, ReLU) + L1L2 Regularization
+↓
+BatchNormalization + Dropout(0.2)
+↓
+Dense (16 units, ReLU)
+↓
+Dense (1 unit, Linear) - Output
+```
+
+### Training Configuration
+
+- **Optimizer**: Adam (lr=0.0005, beta_1=0.9, beta_2=0.999)
+- **Loss Function**: Huber Loss (robust to outliers)
+- **Metrics**: MAE, MSE
+- **Scaler**: RobustScaler (robust to outliers)
+
+## Performance Metrics
+
+### Mean Absolute Error (MAE)
+Average absolute difference between predicted and actual values.
+- Lower values indicate better performance
+- Expressed in same units as target variable (dollars)
+
+### Root Mean Square Error (RMSE)
+Square root of average squared differences.
+- Penalizes larger errors more heavily
+- Sensitive to outliers
+
+### R-squared (R²)
+Proportion of variance explained by the model.
+- Range: 0-1 (higher is better)
+- 1.0 = perfect fit, 0.0 = no better than mean
+
+### Mean Absolute Percentage Error (MAPE)
+Average absolute percentage difference.
+- Expressed as percentage
+- Scale-independent metric
+
+## Best Practices
+
+### Data Preparation
+1. Use sufficient historical data (≥2 years recommended)
+2. Ensure data quality and handle missing values
+3. Consider market conditions and structural breaks
+
+### Model Training
+1. Use early stopping to prevent overfitting
+2. Monitor validation metrics during training
+3. Save checkpoints for best models
+4. Experiment with different architectures
+
+### Feature Engineering
+1. Include relevant technical indicators
+2. Consider lag features for temporal patterns
+3. Normalize features appropriately
+4. Remove highly correlated features if needed
+
+### Evaluation
+1. Use out-of-sample testing
+2. Evaluate multiple metrics
+3. Consider practical significance of errors
+4. Validate on different market conditions
+
+## Troubleshooting
+
+### Common Issues
+
+**1. Empty Data Error**
+```
+ValueError: yfinance returned empty data
+```
+**Solution**: Check ticker symbol spelling and ensure it exists on Yahoo Finance.
+
+**2. API Key Error**
+```
+Alpha Vantage failed: Invalid API key
+```
+**Solution**: Verify your Alpha Vantage API key is correct and active.
+
+**3. Memory Issues**
+```
+ResourceExhaustedError: OOM when allocating tensor
+```
+**Solution**: Reduce batch_size or sequence_length, or use smaller model architecture.
+
+**4. Poor Performance**
+- Increase training data period
+- Add more relevant features
+- Adjust model architecture
+- Tune hyperparameters
+
+### Performance Optimization
+
+1. **GPU Usage**: Ensure TensorFlow is using GPU if available
+2. **Batch Size**: Experiment with different batch sizes
+3. **Sequence Length**: Balance between context and computational cost
+4. **Feature Selection**: Remove irrelevant features
+
+## API Reference
+
+### Data Sources
+
+**Yahoo Finance (Primary)**
+- Real-time and historical data
+- No API key required
+- Reliable for major stocks
+
+**Alpha Vantage (Fallback)**
+- Requires free API key
+- 5 calls per minute limit
+- Good for international stocks
+
+### Model Files
+
+**Keras Model (.keras)**
+- Complete model architecture and weights
+- Can be loaded with tf.keras.models.load_model()
+
+**Scaler (.pkl)**
+- Fitted preprocessing scaler
+- Essential for making predictions
+
+**Metadata (.pkl)**
+- Model configuration
+- Feature list and parameters
+
+## Limitations
+
+1. **Market Assumptions**: Assumes historical patterns continue
+2. **External Factors**: Cannot predict impact of news, events
+3. **Volatility**: Performance may vary with market conditions
+4. **Overfitting**: Risk of memorizing rather than learning patterns
+
+## Future Enhancements
+
+1. **Ensemble Methods**: Combine multiple models
+2. **Attention Mechanisms**: Focus on relevant time periods
+3. **Multi-asset Prediction**: Predict multiple stocks simultaneously
+4. **Real-time Updates**: Continuous learning from new data
+5. **Alternative Data**: Incorporate news sentiment, social media
+
+## License
+
+This documentation is provided as-is for educational and research purposes.
