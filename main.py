@@ -44,8 +44,7 @@ else:
         # Plot historical + predicted
         fig, ax = plt.subplots()
         ax.plot(dates, closing_prices, label="Historical Prices", marker='o')
-        ax.plot(dates[-1] + datetime.timedelta(days=1), predicted_value,
-                label="Predicted Next Price", marker='x', color='red')
+        #ax.plot(dates[-1] + datetime.timedelta(days=1), predicted_value,label="Predicted Next Price", marker='x', color='red')
         ax.set_xlabel("Date")
         ax.set_ylabel("Price (USD)")
         ax.set_title(f"{selected_symbol} Price Forecast")
@@ -53,4 +52,5 @@ else:
 
         st.pyplot(fig)
 
-        st.markdown(f"### 📈 Predicted next price for **{selected_symbol}**: `{predicted_value:.2f}`")
+        #st.markdown(f"### 📈 Predicted next price for **{selected_symbol}**: `{predicted_value:.2f}`")
+        st.markdown(f"### 📈 Predicted difference between previous and next price for **{selected_symbol}**: `{predicted_value:.2f}`")
