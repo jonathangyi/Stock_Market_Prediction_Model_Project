@@ -277,5 +277,7 @@ def main():
         except Exception as e:
             print(f"Multi-output model creation failed: {e}")
 
+    scaler = joblib.load("multi_output_stock_scaler.pkl")
+
 if __name__ == "__main__":
     main()
